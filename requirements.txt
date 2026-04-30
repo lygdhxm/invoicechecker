@@ -1,0 +1,14 @@
+flask
+openai
+PyMuPDF
+playwright
+python-dotenv
+Pillow
+pandas
+openpyxl
+ddddocr
+easyofd
+
+# 可选：二维码扫描（安装后自动启用，可跳过 VLM 识别以节省 token）
+# pyzbar
+# opencv-python-headless

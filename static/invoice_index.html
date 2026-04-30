@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>发票查验识别系统</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ══════════════════════════════════════════════
+   CSS 变量系统（订阅前端设计语言）
+══════════════════════════════════════════════ */
+:root {
+    --bg-base:       #f0eff5;
+    --glass:         rgba(255,255,255,0.62);
+    --glass-hover:   rgba(255,255,255,0.80);
+    --glass-active:  rgba(255,255,255,0.92);
+    --glass-border:  rgba(180,174,210,0.28);
+    --glass-border2: rgba(150,140,200,0.42);
+    --text:          #1c1a2e;
+    --text-muted:    #6b6585;
+    --text-dim:      #a8a4be;
+    --accent:        #4a4acb;
+    --accent2:       #3f3fb0;
+    --accent-light:  #ededff;
+    --accent-glow:   rgba(91,91,214,0.18);
+    --accent-dim:    rgba(91,91,214,0.10);
+    --accent-border: rgba(91,91,214,0.35);
+    --blue:          #2b6cb0;
+    --blue-light:    #ebf4ff;
+    --blue-dim:      rgba(43,108,176,0.10);
+    --blue-border:   rgba(43,108,176,0.28);
+    --blue-glow:     rgba(43,108,176,0.22);
+    --success:       #1a9e6e;
+    --success-light: #edfaf4;
+    --success-border:rgba(26,158,110,0.28);
+    --warning:       #c07c10;
+    --warning-light: #fef9ec;
+    --warning-border:rgba(192,124,16,0.28);
+    --error:         #c0392b;
+    --error-light:   rgba(192,57,43,0.08);
+    --error-border:  rgba(192,57,43,0.28);
+    --radius-sm:  9px;
+    --radius:    15px;
+    --radius-lg: 20px;
+    --radius-xl: 26px;
+    --shadow-sm: 0 1px 4px rgba(80,70,160,0.06), 0 2px 12px rgba(80,70,160,0.05);
+    --shadow:    0 4px 16px rgba(80,70,160,0.09), 0 1px 4px rgba(80,70,160,0.05);
+    --shadow-lg: 0 12px 40px rgba(80,70,160,0.14), 0 2px 8px rgba(80,70,160,0.07);
+    --blur:    blur(12px) saturate(145%);
+    --blur-md: blur(18px) saturate(155%);
+    --mono: 'DM Mono', monospace;
+    --serif: 'Noto Serif SC', 'PingFang SC', 'Microsoft YaHei', serif;
+}
+
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+    background-color: var(--bg-base);
+    background-image:
+        radial-gradient(ellipse 65% 50% at 5%   0%,  rgba(150,140,240,0.11) 0%, transparent 65%),
+        radial-gradient(ellipse 48% 38% at 96%  5%,  rgba(255,175,195,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 42% 32% at 2%  95%,  rgba(130,215,195,0.07) 0%, transparent 60%);
+    color: var(--text);
+    font-family: var(--serif);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+body::before {
+    content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.038'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+}
+
+.app-root { position: relative; z-index: 1; }
+
+/* ── 页面包裹 ── */
+.wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 24px 100px;
+}
+
+/* ══════════════════════════════════════════════
+   HEADER
+══════════════════════════════════════════════ */
+@keyframes header-rise {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+header {
+    margin-bottom: 40px;
+    animation: header-rise 0.7s 0.1s cubic-bezier(0.22,1,0.36,1) both;
+}
+.header-eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 0.58rem;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600; margin-bottom: 10px;
+}
+.header-eyebrow::before {
+    content: ''; display: block;
+    width: 20px; height: 2px;
+    background: var(--accent); border-radius: 2px;
+}
+header h1 {
+    font-size: clamp(26px, 5vw, 40px);
+    font-weight: 700; letter-spacing: -0.5px; line-height: 1.15;
+    color: var(--text);
+}
+header h1 em { font-style: italic; color: var(--text-muted); }
+.header-sub {
+    font-family: var(--mono); font-size: 0.65rem;
+    color: var(--text-dim); letter-spacing: 0.12em; margin-top: 8px;
+}
+
+/* ══════════════════════════════════════════════
+   TAB NAV（玻璃态胶囊）
+══════════════════════════════════════════════ */
+@keyframes tab-enter {
+    from { opacity: 0; transform: translateY(-12px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.tab-nav {
+    display: inline-flex; gap: 4px;
+    padding: 5px; margin-bottom: 36px;
+    background:
+        radial-gradient(ellipse 80% 60% at 22% 18%, rgba(255,255,255,0.30) 0%, transparent 58%),
+        linear-gradient(158deg, rgba(255,255,255,0.40) 0%, rgba(245,243,255,0.18) 35%, rgba(210,205,250,0.16) 65%, rgba(255,255,255,0.26) 100%);
+    backdrop-filter: var(--blur-md); -webkit-backdrop-filter: var(--blur-md);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255,255,255,0.58);
+    box-shadow: var(--shadow);
+    animation: tab-enter 0.6s 0.2s cubic-bezier(0.22,1,0.36,1) both;
+    position: relative;
+}
+.tab-indicator {
+    position: absolute; top: 5px; height: calc(100% - 10px);
+    border-radius: 13px; pointer-events: none; z-index: 1;
+    background: linear-gradient(150deg, rgba(255,255,255,0.92) 0%, rgba(240,237,255,0.74) 50%, rgba(255,255,255,0.84) 100%);
+    box-shadow: 0 2px 12px rgba(80,70,160,0.11), inset 0 0.5px 0 rgba(255,255,255,1);
+    border: 1px solid rgba(255,255,255,0.82);
+    transition: left 0.35s cubic-bezier(0.34,1.2,0.55,1), width 0.35s cubic-bezier(0.34,1.2,0.55,1);
+}
+.tab-btn {
+    font-family: var(--serif); font-size: 0.82rem; font-weight: 600;
+    padding: 9px 22px; border: none; background: none;
+    color: rgba(38,34,65,0.52); cursor: pointer;
+    border-radius: 13px; white-space: nowrap;
+    position: relative; z-index: 2;
+    transition: color 0.22s ease;
+    display: flex; align-items: center; gap: 7px;
+}
+.tab-btn:hover { color: rgba(28,24,52,0.80); }
+.tab-btn.active { color: rgba(22,20,45,0.90); font-weight: 700; }
+.tab-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor; opacity: 0.45;
+    transition: opacity 0.2s;
+}
+.tab-btn.active .tab-dot { opacity: 1; }
+
+/* ── TAB PANELS ── */
+.tab-panel { display: none; }
+.tab-panel.active {
+    display: block;
+    animation: fadeUp 0.35s cubic-bezier(0.22,1,0.36,1) both;
+}
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+/* ══════════════════════════════════════════════
+   SECTION LABEL
+══════════════════════════════════════════════ */
+.section-label {
+    font-family: var(--mono); font-size: 0.58rem;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text-dim); margin-bottom: 14px;
+    display: flex; align-items: center; gap: 12px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--glass-border); }
+
+/* ══════════════════════════════════════════════
+   DROP ZONE（玻璃态）
+══════════════════════════════════════════════ */
+.drop-zone {
+    background: var(--glass);
+    backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+    border: 1.5px dashed var(--glass-border2);
+    border-radius: var(--radius-lg);
+    padding: 48px 32px; text-align: center;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    box-shadow: var(--shadow-sm);
+}
+.drop-zone::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, var(--dz-glow, var(--accent-glow)) 0%, transparent 70%);
+    opacity: 0; transition: opacity 0.3s;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--dz-accent, var(--accent));
+    background: var(--glass-hover);
+    box-shadow: var(--shadow);
+}
+.drop-zone:hover::before, .drop-zone.drag-over::before { opacity: 1; }
+.drop-zone.drag-over::after {
+    content: '松开添加';
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-size: 22px; font-style: italic;
+    color: var(--dz-accent, var(--accent));
+    background: rgba(240,239,245,0.7);
+    backdrop-filter: blur(4px);
+}
+.drop-zone.blue-zone { --dz-accent: var(--blue); --dz-glow: var(--blue-dim); }
+.dz-icon { width: 44px; height: 44px; margin: 0 auto 16px; opacity: 0.28; color: var(--text); }
+.drop-zone h3 {
+    font-family: var(--serif); font-size: 16px; font-style: italic;
+    color: var(--text-muted); margin-bottom: 6px;
+}
+.drop-zone p { font-family: var(--mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.08em; }
+
+/* ══════════════════════════════════════════════
+   FILE LIST
+══════════════════════════════════════════════ */
+.file-list { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.file-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    background: var(--glass);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    transition: border-color 0.15s, background 0.15s;
+    animation: slideIn 0.2s ease;
+}
+@keyframes slideIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+.file-item[data-status=success] { border-color: var(--success-border); background: var(--success-light); }
+.file-item[data-status=error]   { border-color: var(--error-border);   background: var(--error-light); }
+.file-item[data-status=processing] { border-color: var(--blue-border); background: var(--blue-light); }
+.fi-icon  { font-size: 15px; flex-shrink: 0; }
+.fi-name  { flex: 1; font-family: var(--mono); font-size: 0.72rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-size  { font-family: var(--mono); font-size: 0.65rem; color: var(--text-dim); }
+.fi-status { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.file-item[data-status=pending]    .fi-status::after { content: '○'; color: var(--text-dim); }
+.file-item[data-status=processing] .fi-status { animation: spin 0.8s linear infinite; }
+.file-item[data-status=processing] .fi-status::after { content: '◌'; color: var(--blue); }
+.file-item[data-status=success]    .fi-status::after { content: '✓'; color: var(--success); font-weight: 700; }
+.file-item[data-status=error]      .fi-status::after { content: '✕'; color: var(--error); }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.fi-rm {
+    width: 24px; height: 24px; border: none; background: none;
+    cursor: pointer; color: var(--text-dim); font-size: 16px;
+    border-radius: var(--radius-sm); transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+}
+.fi-rm:hover { color: var(--error); background: var(--error-light); }
+
+/* ══════════════════════════════════════════════
+   BUTTONS
+══════════════════════════════════════════════ */
+.actions { display: flex; gap: 10px; align-items: center; margin-top: 20px; flex-wrap: wrap; }
+.btn {
+    font-family: var(--serif); font-size: 0.82rem; font-weight: 600;
+    border: none; cursor: pointer; padding: 10px 24px;
+    border-radius: var(--radius); display: inline-flex; align-items: center; gap: 8px;
+    transition: transform 0.32s cubic-bezier(0.34,1.3,0.55,1), box-shadow 0.25s ease;
+    position: relative; overflow: hidden;
+}
+.btn::after {
+    content: ''; position: absolute; inset: 0; border-radius: inherit;
+    background: linear-gradient(155deg, rgba(255,255,255,0.22) 0%, transparent 60%);
+    pointer-events: none;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: scale(0.96); transition: transform 0.08s ease; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    color: #fff;
+    box-shadow: 0 4px 16px var(--accent-glow), inset 0 0.5px 0 rgba(255,255,255,0.25);
+}
+.btn-primary:hover:not(:disabled) { box-shadow: 0 8px 24px rgba(91,91,214,0.28), inset 0 0.5px 0 rgba(255,255,255,0.25); }
+
+.btn-blue {
+    background: linear-gradient(135deg, var(--blue) 0%, #1e5a9c 100%);
+    color: #fff;
+    box-shadow: 0 4px 16px var(--blue-glow), inset 0 0.5px 0 rgba(255,255,255,0.25);
+}
+.btn-blue:hover:not(:disabled) { box-shadow: 0 8px 24px rgba(43,108,176,0.32), inset 0 0.5px 0 rgba(255,255,255,0.25); }
+
+.btn-green {
+    background: linear-gradient(135deg, var(--success) 0%, #157a55 100%);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(26,158,110,0.20), inset 0 0.5px 0 rgba(255,255,255,0.25);
+}
+.btn-green:hover:not(:disabled) { box-shadow: 0 8px 24px rgba(26,158,110,0.30), inset 0 0.5px 0 rgba(255,255,255,0.25); }
+
+.btn-ghost {
+    background: var(--glass);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    color: var(--text-muted); border: 1px solid var(--glass-border2);
+    box-shadow: var(--shadow-sm);
+}
+.btn-ghost:hover { background: var(--glass-hover); color: var(--text); }
+
+.file-count { font-family: var(--mono); font-size: 0.65rem; color: var(--text-dim); }
+
+/* ══════════════════════════════════════════════
+   PROGRESS
+══════════════════════════════════════════════ */
+.progress-wrap { display: none; margin: 24px 0; }
+.progress-wrap.active { display: block; }
+.prog-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.prog-label { font-family: var(--serif); font-size: 0.82rem; font-style: italic; color: var(--text-muted); }
+.prog-count { font-family: var(--mono); font-size: 0.72rem; color: var(--accent); }
+.prog-count.blue { color: var(--blue); }
+.prog-track {
+    height: 3px;
+    background: var(--glass-border);
+    border-radius: 2px; overflow: hidden;
+}
+.prog-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #8b8be0);
+    border-radius: 2px; transition: width 0.4s ease; width: 0%;
+}
+.prog-fill.blue { background: linear-gradient(90deg, var(--blue), var(--success)); }
+
+/* ══════════════════════════════════════════════
+   LOG TERMINAL（玻璃态）
+══════════════════════════════════════════════ */
+.log-wrap { display: none; margin: 24px 0; }
+.log-wrap.active { display: block; }
+.terminal {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    max-height: 220px; overflow-y: auto;
+    font-family: var(--mono); font-size: 0.7rem; line-height: 2;
+    box-shadow: var(--shadow-sm);
+    scrollbar-width: thin; scrollbar-color: var(--glass-border2) transparent;
+}
+.terminal::-webkit-scrollbar { width: 4px; }
+.terminal::-webkit-scrollbar-thumb { background: var(--glass-border2); border-radius: 2px; }
+.log-line { display: block; animation: fadeLog 0.1s ease; }
+@keyframes fadeLog { from { opacity: 0; } to { opacity: 1; } }
+.log-line .ts { color: var(--text-dim); margin-right: 10px; }
+.log-line.info .msg    { color: var(--text-muted); }
+.log-line.ok   .msg    { color: var(--success); }
+.log-line.warn .msg    { color: var(--warning); }
+.log-line.err  .msg    { color: var(--error); }
+.log-line.step .msg    { color: var(--blue); }
+.log-line.section      { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--glass-border); }
+.log-line.section .msg { color: var(--text-muted); font-weight: 500; }
+
+/* ══════════════════════════════════════════════
+   VERIFY RESULTS（结果卡片）
+══════════════════════════════════════════════ */
+#results-section { display: none; margin-top: 36px; }
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px; margin-top: 12px;
+}
+.result-card {
+    background: var(--glass);
+    backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg); overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    animation: fadeUp 0.3s ease;
+}
+.result-card:hover { border-color: var(--glass-border2); box-shadow: var(--shadow); }
+.rc-head {
+    padding: 10px 14px; display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--glass-border);
+    background: rgba(255,255,255,0.38);
+}
+.rc-head.ok-head  { background: var(--success-light); }
+.rc-head.err-head { background: var(--error-light); }
+.rc-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; }
+.rc-dot.ok  { background: var(--success); }
+.rc-dot.err { background: var(--error); }
+.rc-name { font-family: var(--mono); font-size: 0.68rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.rc-body   { padding: 12px; }
+.rc-status { font-family: var(--mono); font-size: 0.68rem; margin-bottom: 10px; }
+.rc-status.ok  { color: var(--success); }
+.rc-status.err { color: var(--error); }
+.rc-img { width: 100%; border: 1px solid var(--glass-border); border-radius: var(--radius-sm); cursor: pointer; transition: opacity 0.2s; }
+.rc-img:hover { opacity: 0.85; }
+
+/* ══════════════════════════════════════════════
+   RECOGNIZE RESULTS TABLE（识别结果表格）
+══════════════════════════════════════════════ */
+#rec-results-section { display: none; margin-top: 36px; }
+.rec-stats-bar {
+    display: flex; gap: 20px; margin-bottom: 14px;
+    padding: 12px 16px;
+    background: var(--glass);
+    backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    flex-wrap: wrap;
+}
+.rec-stat { font-family: var(--mono); font-size: 0.65rem; color: var(--text-dim); }
+.rec-stat span       { color: var(--text-muted); }
+.rec-stat .num-blue  { color: var(--blue); font-weight: 600; }
+.rec-stat .num-green { color: var(--success); font-weight: 600; }
+.rec-stat .num-red   { color: var(--error); font-weight: 600; }
+
+.rec-table-wrap {
+    overflow-x: auto;
+    background: var(--glass);
+    backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+.rec-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 0.68rem; }
+.rec-table th {
+    background: rgba(255,255,255,0.52);
+    color: var(--text-dim); font-weight: 500;
+    letter-spacing: 0.08em;
+    padding: 10px 12px; text-align: left;
+    border-bottom: 1px solid var(--glass-border);
+    white-space: nowrap;
+}
+.rec-table td {
+    padding: 9px 12px; color: var(--text-muted);
+    border-bottom: 1px solid var(--glass-border);
+    max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rec-table tr:last-child td { border-bottom: none; }
+.rec-table tr:hover td { background: rgba(255,255,255,0.42); }
+.rec-table td.err-cell  { color: var(--error); }
+.rec-table td.ok-cell   { color: var(--success); }
+.source-badge {
+    display: inline-block; padding: 2px 7px;
+    border-radius: 6px; font-size: 0.6rem; letter-spacing: 0.06em;
+}
+.source-badge.regex { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
+.source-badge.vlm   { background: var(--blue-light);    color: var(--blue);    border: 1px solid var(--blue-border); }
+.source-badge.err   { background: var(--error-light);   color: var(--error);   border: 1px solid var(--error-border); }
+
+.rec-table tfoot td {
+    padding: 10px 12px;
+    border-top: 2px solid var(--glass-border2);
+    background: rgba(255,255,255,0.52);
+    font-family: var(--mono); font-size: 0.68rem; white-space: nowrap;
+}
+.rec-table tfoot .foot-label { color: var(--text-dim); letter-spacing: 0.06em; font-weight: 500; }
+.rec-table tfoot .foot-total { color: var(--accent); font-size: 0.82rem; font-weight: 700; }
+.rec-table tfoot .foot-sub   { color: var(--text-dim); font-size: 0.6rem; }
+
+.rec-export-row { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+#rec-export-hint { font-family: var(--mono); font-size: 0.65rem; color: var(--text-dim); }
+
+/* ══════════════════════════════════════════════
+   LIGHTBOX
+══════════════════════════════════════════════ */
+.lightbox {
+    display: none; position: fixed; inset: 0; z-index: 999;
+    background: rgba(240,239,245,0.88);
+    backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
+    align-items: center; justify-content: center; padding: 24px;
+}
+.lightbox.active { display: flex; }
+.lightbox img { max-width: 90vw; max-height: 90vh; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }
+.lb-close {
+    position: absolute; top: 20px; right: 24px;
+    color: var(--text-muted); font-size: 26px; cursor: pointer;
+    background: var(--glass); border: 1px solid var(--glass-border);
+    border-radius: 50%; width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0.8; transition: opacity 0.2s, background 0.2s; line-height: 1;
+}
+.lb-close:hover { opacity: 1; background: var(--glass-hover); }
+
+/* ══════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════ */
+.toasts { position: fixed; bottom: 28px; right: 28px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+    padding: 10px 18px; border-radius: var(--radius);
+    font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.04em;
+    animation: toastIn 0.25s cubic-bezier(0.22,1,0.36,1);
+    border: 1px solid transparent;
+    backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+    box-shadow: var(--shadow);
+}
+.toast.success { background: var(--success-light); border-color: var(--success-border); color: var(--success); }
+.toast.error   { background: var(--error-light);   border-color: var(--error-border);   color: var(--error); }
+.toast.info    { background: var(--glass);          border-color: var(--glass-border2);  color: var(--text-muted); }
+@keyframes toastIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 600px) {
+    header h1 { font-size: 24px; }
+    .actions { flex-direction: column; align-items: stretch; }
+    .tab-btn { padding: 9px 14px; font-size: 0.72rem; }
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+<div class="app-root">
+<div class="wrap">
+
+  <header>
+    <div class="header-eyebrow">TAX INVOICE · MANAGEMENT SYSTEM</div>
+    <h1>发票查验识别系统</h1>
+    <div class="header-sub">发票国税系统查验 · 发票识别整理 · 支持PDF、OFD、图片 </div>
+  </header>
+
+  <!-- ── TAB NAV ── -->
+  <div class="tab-nav" id="tab-nav">
+    <div class="tab-indicator" id="tab-indicator"></div>
+    <button class="tab-btn active" id="tab-verify" onclick="switchTab('verify', this)">
+      <span class="tab-dot"></span>发票查验
+    </button>
+    <button class="tab-btn" id="tab-recognize" onclick="switchTab('recognize', this)">
+      <span class="tab-dot"></span>发票识别整理
+    </button>
+  </div>
+
+  <!-- ================================================================
+       TAB 1：发票查验
+  ================================================================ -->
+  <div class="tab-panel active" id="panel-verify">
+
+    <div class="section-label"><span>上传发票文件</span></div>
+
+    <div class="drop-zone" id="v-drop-zone" onclick="document.getElementById('v-file-input').click()">
+      <div class="dz-icon">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="8" y="6" width="26" height="36" rx="3"/>
+          <path d="M22 6v12h12"/>
+          <line x1="14" y1="26" x2="28" y2="26"/>
+          <line x1="14" y1="32" x2="22" y2="32"/>
+          <circle cx="38" cy="38" r="8" fill="rgba(91,91,214,0.12)" stroke="var(--accent)"/>
+          <path d="M38 34v8M34 38h8" stroke="var(--accent)" stroke-width="1.8"/>
+        </svg>
+      </div>
+      <h3>拖拽文件至此，或点击选择</h3>
+      <p>PDF · OFD · XML · JPG · PNG · WEBP · BMP &nbsp;|&nbsp; 可批量选择</p>
+    </div>
+    <input type="file" id="v-file-input" multiple accept=".pdf,.ofd,.xml,.jpg,.jpeg,.png,.webp,.bmp" style="display:none"/>
+
+    <div class="file-list" id="v-file-list"></div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="v-start-btn" onclick="startVerification()" disabled>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        开始查验
+      </button>
+      <button class="btn btn-ghost" onclick="vClearAll()">清空</button>
+      <span class="file-count" id="v-file-count"></span>
+    </div>
+
+    <div class="progress-wrap" id="v-prog-wrap">
+      <div class="prog-header">
+        <span class="prog-label">查验进度</span>
+        <span class="prog-count" id="v-prog-count">0 / 0</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="v-prog-fill"></div></div>
+    </div>
+
+    <div class="log-wrap" id="v-log-wrap">
+      <div class="section-label log-header"><span>运行日志</span></div>
+      <div class="terminal" id="v-terminal"></div>
+    </div>
+
+    <div id="results-section">
+      <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>查验结果</span>
+        <button id="dl-all-btn" onclick="downloadScreenshots()" style="display:none;padding:4px 14px;background:var(--primary,#4f6ef7);color:#fff;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;opacity:0.92;">⬇ 下载截图</button>
+      </div>
+      <div class="results-grid" id="results-grid"></div>
+    </div>
+
+  </div><!-- /panel-verify -->
+
+  <!-- ================================================================
+       TAB 2：发票识别整理
+  ================================================================ -->
+  <div class="tab-panel" id="panel-recognize">
+
+    <div class="section-label"><span>上传发票文件</span></div>
+
+    <div class="drop-zone blue-zone" id="r-drop-zone" onclick="document.getElementById('r-file-input').click()">
+      <div class="dz-icon">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="8" y="6" width="26" height="36" rx="3"/>
+          <path d="M22 6v12h12"/>
+          <line x1="14" y1="22" x2="28" y2="22"/>
+          <line x1="14" y1="28" x2="28" y2="28"/>
+          <line x1="14" y1="34" x2="22" y2="34"/>
+          <circle cx="38" cy="38" r="8" fill="rgba(43,108,176,0.10)" stroke="var(--blue)"/>
+          <path d="M38 35v6M35 38h6" stroke="var(--blue)" stroke-width="1.8"/>
+        </svg>
+      </div>
+      <h3>拖拽发票文件至此，或点击选择</h3>
+      <p>PDF · OFD · XML · JPG · PNG · WEBP · BMP &nbsp;|&nbsp; 可批量选择</p>
+    </div>
+    <input type="file" id="r-file-input" multiple accept=".pdf,.ofd,.xml,.jpg,.jpeg,.png,.webp,.bmp" style="display:none"/>
+
+    <div class="file-list" id="r-file-list"></div>
+
+    <div class="actions">
+      <button class="btn btn-blue" id="r-start-btn" onclick="startRecognize()" disabled>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        开始识别
+      </button>
+      <button class="btn btn-ghost" onclick="rClearAll()">清空</button>
+      <span class="file-count" id="r-file-count"></span>
+    </div>
+
+    <div class="progress-wrap" id="r-prog-wrap">
+      <div class="prog-header">
+        <span class="prog-label">识别进度</span>
+        <span class="prog-count blue" id="r-prog-count">0 / 0</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill blue" id="r-prog-fill"></div></div>
+    </div>
+
+    <div class="log-wrap" id="r-log-wrap">
+      <div class="section-label log-header"><span>处理日志</span></div>
+      <div class="terminal" id="r-terminal"></div>
+    </div>
+
+    <div id="rec-results-section">
+      <div class="section-label"><span>识别结果</span></div>
+      <div class="rec-stats-bar" id="rec-stats-bar"></div>
+      <div class="rec-table-wrap">
+        <table class="rec-table" id="rec-table">
+          <thead>
+            <tr>
+              <th>文件名</th>
+              <th>发票抬头</th>
+              <th>发票号码</th>
+              <th>开票日期</th>
+              <th>购买方</th>
+              <th>销售方</th>
+              <th>价税合计</th>
+              <th>商品详情</th>
+              <th>识别方式</th>
+            </tr>
+          </thead>
+          <tbody id="rec-table-body"></tbody>
+          <tfoot id="rec-table-foot"></tfoot>
+        </table>
+      </div>
+      <div class="rec-export-row">
+        <button class="btn btn-green" id="r-export-btn" onclick="exportExcel()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          导出 Excel
+        </button>
+        <span id="rec-export-hint"></span>
+      </div>
+    </div>
+
+  </div><!-- /panel-recognize -->
+
+</div><!-- /wrap -->
+</div><!-- /app-root -->
+
+<!-- lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLb()">
+  <button class="lb-close" onclick="closeLb()">✕</button>
+  <img id="lb-img" src="" alt="查验截图"/>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+// =================================================================
+//  TAB SWITCHING（带指示器动画）
+// =================================================================
+function switchTab(name, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + name).classList.add('active');
+    moveTabIndicator(btn);
+}
+
+function moveTabIndicator(btn) {
+    const nav = document.getElementById('tab-nav');
+    const ind = document.getElementById('tab-indicator');
+    const navRect = nav.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    ind.style.left  = (btnRect.left - navRect.left) + 'px';
+    ind.style.width = btnRect.width + 'px';
+    ind.style.opacity = '1';
+}
+
+// 初始化指示器位置
+window.addEventListener('load', () => {
+    const activeBtn = document.querySelector('.tab-btn.active');
+    if (activeBtn) moveTabIndicator(activeBtn);
+});
+
+// =================================================================
+//  UTILS
+// =================================================================
+function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fileIcon(name) {
+    const ext = name.split('.').pop().toLowerCase();
+    return { pdf:'📄', ofd:'📋', xml:'📝', jpg:'🖼️', jpeg:'🖼️', png:'🖼️', webp:'🖼️', bmp:'🖼️' }[ext] || '📎';
+}
+function fmtSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/1048576).toFixed(1) + ' MB';
+}
+function toast(msg, type='info', duration=3000) {
+    const t = document.createElement('div');
+    t.className = 'toast ' + type;
+    t.textContent = msg;
+    document.getElementById('toasts').appendChild(t);
+    setTimeout(() => t.remove(), duration);
+}
+function openLb(src) {
+    document.getElementById('lb-img').src = src;
+    document.getElementById('lightbox').classList.add('active');
+}
+function closeLb() {
+    document.getElementById('lightbox').classList.remove('active');
+}
+
+// =================================================================
+//  VERIFY (TAB 1)
+// =================================================================
+const vState = { files: [], running: false };
+const vFileList  = document.getElementById('v-file-list');
+const vStartBtn  = document.getElementById('v-start-btn');
+const vFileCount = document.getElementById('v-file-count');
+const vProgWrap  = document.getElementById('v-prog-wrap');
+const vLogWrap   = document.getElementById('v-log-wrap');
+const vTerminal  = document.getElementById('v-terminal');
+const vProgFill  = document.getElementById('v-prog-fill');
+const vProgCount = document.getElementById('v-prog-count');
+const resultsSection = document.getElementById('results-section');
+const resultsGrid    = document.getElementById('results-grid');
+
+// Drag & Drop
+const vDrop = document.getElementById('v-drop-zone');
+vDrop.addEventListener('dragover', e => { e.preventDefault(); vDrop.classList.add('drag-over'); });
+vDrop.addEventListener('dragleave', () => vDrop.classList.remove('drag-over'));
+vDrop.addEventListener('drop', e => {
+    e.preventDefault(); vDrop.classList.remove('drag-over');
+    [...e.dataTransfer.files].forEach(vAddFile);
+});
+document.getElementById('v-file-input').addEventListener('change', e => {
+    [...e.target.files].forEach(vAddFile);
+    e.target.value = '';
+});
+
+function vAddFile(f) {
+    if (vState.files.find(x => x.name === f.name && x.size === f.size)) return;
+    vState.files.push(f); vRender();
+}
+function vClearAll() { vState.files = []; vRender(); }
+function vRemoveFile(i) { vState.files.splice(i, 1); vRender(); }
+
+function vRender() {
+    vFileList.innerHTML = vState.files.map((f, i) => `
+        <div class="file-item" data-status="pending" id="vfi-${i}">
+            <span class="fi-icon">${fileIcon(f.name)}</span>
+            <span class="fi-name" title="${esc(f.name)}">${esc(f.name)}</span>
+            <span class="fi-size">${fmtSize(f.size)}</span>
+            <span class="fi-status"></span>
+            ${!vState.running ? `<button class="fi-rm" onclick="vRemoveFile(${i})" title="移除">×</button>` : ''}
+        </div>
+    `).join('');
+    vStartBtn.disabled = vState.files.length === 0 || vState.running;
+    vFileCount.textContent = vState.files.length > 0 ? `共 ${vState.files.length} 个文件` : '';
+}
+
+function vAddLog(msg, type='info') {
+    const ts = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+    const line = document.createElement('span');
+    line.className = `log-line ${type}`;
+    line.innerHTML = `<span class="ts">[${ts}]</span><span class="msg">${esc(msg)}</span>`;
+    vTerminal.appendChild(line);
+    vTerminal.scrollTop = vTerminal.scrollHeight;
+}
+
+function vSetProgress(done, total) {
+    vProgCount.textContent = `${done} / ${total}`;
+    vProgFill.style.width = `${(done / total) * 100}%`;
+}
+
+// 添加截图卡片到结果区（单张发票或多页PDF中的一页）
+function vAddResultCard(containerId, label, statusId) {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    card.id = containerId;
+    card.innerHTML = `
+        <div class="rc-head"><span class="rc-dot"></span><span class="rc-name">${esc(label)}</span></div>
+        <div class="rc-body"><div class="rc-status" id="${statusId}">处理中…</div></div>
+    `;
+    resultsGrid.appendChild(card);
+    resultsSection.style.display = 'block';
+    return card;
+}
+
+// 把截图填入卡片
+function vFillCard(card, statusId, success, screenshotUrl, fname, errorMsg) {
+    const statusEl = document.getElementById(statusId);
+    const head = card.querySelector('.rc-head');
+    if (success && screenshotUrl) {
+        head.classList.add('ok-head');
+        head.querySelector('.rc-dot').classList.add('ok');
+        statusEl.className = 'rc-status ok';
+        statusEl.textContent = '✓ 查验成功';
+        const img = document.createElement('img');
+        img.className = 'rc-img';
+        img.src = screenshotUrl;
+        img.onclick = () => openLb(screenshotUrl);
+        card.querySelector('.rc-body').appendChild(img);
+        window._screenshots = window._screenshots || [];
+        window._screenshots.push({ name: fname + '_查验截图.png', url: screenshotUrl });
+        const dlBtn = document.getElementById('dl-all-btn');
+        dlBtn.style.display = '';
+        dlBtn.textContent = window._screenshots.length === 1
+            ? '⬇ 下载截图'
+            : `⬇ 下载全部截图 (${window._screenshots.length})`;
+    } else {
+        head.classList.add('err-head');
+        head.querySelector('.rc-dot').classList.add('err');
+        statusEl.className = 'rc-status err';
+        statusEl.textContent = '✕ 查验失败' + (errorMsg ? `：${errorMsg}` : '');
+    }
+}
+
+async function startVerification() {
+    if (vState.files.length === 0) return;
+    vState.running = true;
+    vTerminal.innerHTML = '';
+    resultsGrid.innerHTML = '';
+    resultsSection.style.display = 'none';
+    window._screenshots = [];
+    vStartBtn.disabled = true;
+    vProgWrap.classList.add('active');
+    vLogWrap.classList.add('active');
+    vSetProgress(0, vState.files.length);
+    vRender();
+
+    for (let i = 0; i < vState.files.length; i++) {
+        const f = vState.files[i];
+        const fiEl = document.getElementById(`vfi-${i}`);
+        if (fiEl) fiEl.dataset.status = 'processing';
+        vAddLog(`▶ 开始查验：${f.name}`, 'section');
+
+        const fd = new FormData();
+        fd.append('file', f);
+
+        // 单页时预建卡片；多页时等 page_start 事件再动态创建
+        let singleCard = null;
+        let isMultipage = false;
+        // 用于多页时按页号查找卡片
+        const pageCards = {};  // page -> {card, statusId}
+
+        try {
+            const resp = await fetch('/api/verify', { method: 'POST', body: fd });
+            const reader = resp.body.getReader();
+            const decoder = new TextDecoder();
+            let buf = '';
+            let finalSuccess = false;
+            let finalMessage = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buf += decoder.decode(value, { stream: true });
+                const lines = buf.split('\n');
+                buf = lines.pop();
+
+                for (const line of lines) {
+                    if (!line.startsWith('data: ')) continue;
+                    let ev;
+                    try { ev = JSON.parse(line.slice(6)); } catch { continue; }
+
+                    if (ev.type === 'log') {
+                        vAddLog(ev.msg, ev.level || 'info');
+
+                    } else if (ev.type === 'page_start') {
+                        // 多页PDF开始——第一个 page_start 时撤掉单页预建卡片（如有）
+                        isMultipage = true;
+                        if (singleCard) { singleCard.remove(); singleCard = null; }
+                        const label = `${f.name} [${ev.label}]`;
+                        const statusId = `rc-status-${i}-${ev.page}`;
+                        const containerId = `rc-card-${i}-${ev.page}`;
+                        const card = vAddResultCard(containerId, label, statusId);
+                        pageCards[ev.page] = { card, statusId, fname: f.name.replace(/\.[^.]+$/, '') + `_第${ev.page}张` };
+                        vAddLog(`📄 [${ev.label}] 开始查验...`, 'step');
+
+                    } else if (ev.type === 'page_done') {
+                        // 单页结果到达
+                        const pc = pageCards[ev.page];
+                        if (pc) {
+                            vFillCard(pc.card, pc.statusId, ev.success, ev.screenshot_url, pc.fname, ev.message);
+                        }
+                        // 更新进度（按页计）
+                        vSetProgress(ev.page, ev.total);
+
+                    } else if (ev.type === 'done') {
+                        finalSuccess = ev.success;
+                        finalMessage = ev.message || '';
+
+                        if (!isMultipage) {
+                            // 单页情况：预建卡片现在填充
+                            if (!singleCard) {
+                                singleCard = vAddResultCard(`rc-card-${i}`, f.name, `rc-status-${i}`);
+                            }
+                            vFillCard(singleCard, `rc-status-${i}`, ev.success, ev.screenshot_url,
+                                f.name.replace(/\.[^.]+$/, ''), ev.message);
+                        }
+                    }
+                }
+            }
+
+            if (fiEl) fiEl.dataset.status = finalSuccess ? 'success' : 'error';
+            if (isMultipage && finalMessage) {
+                vAddLog(`📊 ${f.name} — ${finalMessage}`, finalSuccess ? 'ok' : 'warn');
+            }
+
+        } catch (e) {
+            vAddLog(`❌ ${f.name} 请求失败: ${e.message}`, 'err');
+            if (fiEl) fiEl.dataset.status = 'error';
+        }
+
+        if (!isMultipage) vSetProgress(i + 1, vState.files.length);
+    }
+
+    vState.running = false;
+    vRender();
+    toast('查验完成', 'success', 3000);
+}
+
+// =================================================================
+//  RECOGNIZE (TAB 2)
+// =================================================================
+const rState = { files: [], running: false, records: [] };
+const rFileList  = document.getElementById('r-file-list');
+const rStartBtn  = document.getElementById('r-start-btn');
+const rFileCount = document.getElementById('r-file-count');
+const rProgWrap  = document.getElementById('r-prog-wrap');
+const rLogWrap   = document.getElementById('r-log-wrap');
+const rTerminal  = document.getElementById('r-terminal');
+const rProgFill  = document.getElementById('r-prog-fill');
+const rProgCount = document.getElementById('r-prog-count');
+const recResultsSection = document.getElementById('rec-results-section');
+
+const rDrop = document.getElementById('r-drop-zone');
+rDrop.addEventListener('dragover', e => { e.preventDefault(); rDrop.classList.add('drag-over'); });
+rDrop.addEventListener('dragleave', () => rDrop.classList.remove('drag-over'));
+rDrop.addEventListener('drop', e => {
+    e.preventDefault(); rDrop.classList.remove('drag-over');
+    [...e.dataTransfer.files].forEach(rAddFile);
+});
+document.getElementById('r-file-input').addEventListener('change', e => {
+    [...e.target.files].forEach(rAddFile);
+    e.target.value = '';
+});
+
+function rAddFile(f) {
+    if (rState.files.find(x => x.name === f.name && x.size === f.size)) return;
+    rState.files.push(f); rRender();
+}
+function rClearAll() { rState.files = []; rRender(); }
+function rRemoveFile(i) { rState.files.splice(i, 1); rRender(); }
+
+function rRender() {
+    rFileList.innerHTML = rState.files.map((f, i) => `
+        <div class="file-item" data-status="pending" id="rfi-${i}">
+            <span class="fi-icon">${fileIcon(f.name)}</span>
+            <span class="fi-name" title="${esc(f.name)}">${esc(f.name)}</span>
+            <span class="fi-size">${fmtSize(f.size)}</span>
+            <span class="fi-status"></span>
+            ${!rState.running ? `<button class="fi-rm" onclick="rRemoveFile(${i})" title="移除">×</button>` : ''}
+        </div>
+    `).join('');
+    rStartBtn.disabled = rState.files.length === 0 || rState.running;
+    rFileCount.textContent = rState.files.length > 0 ? `共 ${rState.files.length} 个文件` : '';
+}
+
+function rAddLog(msg, type='info') {
+    const ts = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+    const line = document.createElement('span');
+    line.className = `log-line ${type}`;
+    line.innerHTML = `<span class="ts">[${ts}]</span><span class="msg">${esc(msg)}</span>`;
+    rTerminal.appendChild(line);
+    rTerminal.scrollTop = rTerminal.scrollHeight;
+}
+
+function rSetProgress(done, total) {
+    rProgCount.textContent = `${done} / ${total}`;
+    rProgFill.style.width = `${(done / total) * 100}%`;
+}
+
+async function startRecognize() {
+    if (rState.files.length === 0) return;
+    rState.running = true;
+    rState.records = [];
+    rTerminal.innerHTML = '';
+    document.getElementById('rec-table-body').innerHTML = '';
+    recResultsSection.style.display = 'none';
+    rStartBtn.disabled = true;
+    rProgWrap.classList.add('active');
+    rLogWrap.classList.add('active');
+    rSetProgress(0, rState.files.length);
+    rRender();
+
+    rAddLog(`开始批量识别，共 ${rState.files.length} 个文件`, 'section');
+
+    const fd = new FormData();
+    rState.files.forEach(f => fd.append('files[]', f));
+
+    rState.files.forEach((_, i) => {
+        const fi = document.getElementById(`rfi-${i}`);
+        if (fi) fi.dataset.status = 'processing';
+    });
+
+    rAddLog('📤 上传文件并识别中...', 'step');
+
+    try {
+        const resp = await fetch('/api/recognize', { method: 'POST', body: fd });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({ error: '服务器错误' }));
+            throw new Error(err.error || `HTTP ${resp.status}`);
+        }
+        const data = await resp.json();
+        rState.records = data.records || [];
+
+        rState.files.forEach((f, i) => {
+            const rec = rState.records.find(r => r.original_file === f.name);
+            const fi = document.getElementById(`rfi-${i}`);
+            if (rec) {
+                if (rec.error) {
+                    if (fi) fi.dataset.status = 'error';
+                    rAddLog(`✕ ${f.name} — ${rec.error}`, 'err');
+                } else {
+                    if (fi) fi.dataset.status = 'success';
+                    const src = rec.source === 'vlm' ? '(VLM)' : '(正则)';
+                    rAddLog(`✓ ${f.name} — 号:${rec.invoice_number||'-'} 额:${rec.total_amount||'-'} ${src}`, 'ok');
+                }
+            }
+            rSetProgress(i + 1, rState.files.length);
+        });
+
+        renderRecTable(rState.records);
+        rAddLog(`🎉 识别完成，共 ${rState.records.length} 条记录`, 'ok');
+        toast(`识别完成 ${rState.records.length} 条`, 'success', 3000);
+
+    } catch (e) {
+        rAddLog(`❌ 请求失败: ${e.message}`, 'err');
+        toast('识别请求失败', 'error');
+        rState.files.forEach((_, i) => {
+            const fi = document.getElementById(`rfi-${i}`);
+            if (fi) fi.dataset.status = 'error';
+        });
+    } finally {
+        rState.running = false;
+        rRender();
+    }
+}
+
+function renderRecTable(records) {
+    recResultsSection.style.display = 'block';
+
+    const total   = records.length;
+    const success = records.filter(r => !r.error).length;
+    const regex   = records.filter(r => r.source === 'regex').length;
+    const vlm     = records.filter(r => r.source === 'vlm').length;
+    const failed  = records.filter(r => r.error).length;
+
+    document.getElementById('rec-stats-bar').innerHTML = `
+        <div class="rec-stat">总计 <span class="num-blue">${total}</span> 张</div>
+        <div class="rec-stat">成功 <span class="num-green">${success}</span></div>
+        <div class="rec-stat">正则识别 <span class="num-green">${regex}</span> <span>(零token)</span></div>
+        <div class="rec-stat">VLM识别 <span class="num-blue">${vlm}</span></div>
+        ${failed ? `<div class="rec-stat">失败 <span class="num-red">${failed}</span></div>` : ''}
+    `;
+
+    const tbody = document.getElementById('rec-table-body');
+    tbody.innerHTML = records.map(r => {
+        if (r.error) {
+            return `<tr>
+                <td title="${esc(r.original_file||'')}">${esc(r.original_file||'')}</td>
+                <td colspan="7" class="err-cell">${esc(r.error)}</td>
+                <td><span class="source-badge err">失败</span></td>
+            </tr>`;
+        }
+        const items = Array.isArray(r.items) ? r.items.join('、') : (r.items || '');
+        const totalAmt = r.total_amount ? Number(r.total_amount).toFixed(2) : '-';
+        const srcBadge = r.source === 'vlm'
+            ? '<span class="source-badge vlm">VLM</span>'
+            : '<span class="source-badge regex">正则</span>';
+        return `<tr>
+            <td title="${esc(r.original_file||'')}">${esc(r.original_file||'')}</td>
+            <td>${esc(r.invoice_title||'-')}</td>
+            <td>${esc(r.invoice_number||'-')}</td>
+            <td>${esc(r.issue_date||'-')}</td>
+            <td title="${esc(r.buyer_name||'')}">${esc(r.buyer_name||'-')}</td>
+            <td title="${esc(r.seller_name||'')}">${esc(r.seller_name||'-')}</td>
+            <td>${esc(totalAmt)}</td>
+            <td title="${esc(items)}">${esc(items||'-')}</td>
+            <td>${srcBadge}</td>
+        </tr>`;
+    }).join('');
+
+    const validRows = records.filter(r => !r.error && r.total_amount);
+    const sumTotal  = validRows.reduce((s, r) => s + (Number(r.total_amount)  || 0), 0);
+    const sumAmex   = validRows.reduce((s, r) => s + (Number(r.amount_ex_tax) || 0), 0);
+    const sumTax    = validRows.reduce((s, r) => s + (Number(r.tax_amount)    || 0), 0);
+    const fmt = n => n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    const tfoot = document.getElementById('rec-table-foot');
+    tfoot.innerHTML = validRows.length ? `
+        <tr>
+            <td colspan="6" class="foot-label">合　计（${validRows.length} 张有效发票）</td>
+            <td class="foot-total">¥ ${fmt(sumTotal)}</td>
+            <td colspan="2" class="foot-sub">不含税 ¥${fmt(sumAmex)} &nbsp;·&nbsp; 税额 ¥${fmt(sumTax)}</td>
+        </tr>` : '';
+
+    document.getElementById('rec-export-hint').textContent = `${success} 条记录可导出`;
+}
+
+async function exportExcel() {
+    if (!rState.records || rState.records.length === 0) {
+        toast('暂无识别结果可导出', 'info');
+        return;
+    }
+    const btn = document.getElementById('r-export-btn');
+    btn.disabled = true;
+    btn.textContent = '导出中...';
+    try {
+        const resp = await fetch('/api/recognize/export', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ records: rState.records })
+        });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({ error: '导出失败' }));
+            throw new Error(err.error || `HTTP ${resp.status}`);
+        }
+        const blob = await resp.blob();
+        const cd = resp.headers.get('Content-Disposition') || '';
+        const fnMatch = cd.match(/filename\*?=(?:UTF-8'')?([^;]+)/i);
+        const filename = fnMatch ? decodeURIComponent(fnMatch[1].replace(/"/g,'')) : '发票识别结果.xlsx';
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename; a.click();
+        URL.revokeObjectURL(url);
+        toast('Excel 已下载', 'success');
+    } catch (e) {
+        toast('导出失败: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> 导出 Excel`;
+    }
+}
+
+async function downloadScreenshots() {
+    const list = window._screenshots || [];
+    if (!list.length) return;
+    if (list.length === 1) {
+        const a = document.createElement('a');
+        a.href = list[0].url;
+        a.download = list[0].name;
+        a.click();
+        return;
+    }
+    const btn = document.getElementById('dl-all-btn');
+    btn.textContent = '打包中…';
+    btn.disabled = true;
+    try {
+        const zip = new JSZip();
+        for (const item of list) {
+            const res = await fetch(item.url);
+            const blob = await res.blob();
+            zip.file(item.name, blob);
+        }
+        const blob = await zip.generateAsync({ type: 'blob' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = '发票查验截图.zip';
+        a.click();
+        toast('ZIP 已下载', 'success');
+    } finally {
+        btn.textContent = `⬇ 下载全部截图 (${list.length})`;
+        btn.disabled = false;
+    }
+}
+</script>
+</body>
+</html>
