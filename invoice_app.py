@@ -41,8 +41,7 @@ app = Flask(__name__, static_folder='static', static_url_path='')
 
 # ==================== 配置区域（从 .env 读取）====================
 API_KEY   = os.getenv("ALIBABA_API_KEY", "")  # 阿里云百炼 API Key
-VLM_MODEL = os.getenv("VLM_MODEL", "qwen-vl-max")
-RECOGNIZE_VLM_MODEL = os.getenv("RECOGNIZE_VLM_MODEL", "qwen3-vl-flash")
+VLM_MODEL = os.getenv("VLM_MODEL", "qwen3-vl-flash")
 
 IMPORT_BUTTON_SELECTOR  = "#fileCy"
 BROWSE_BUTTON_SELECTOR  = "#openBtn"
@@ -1261,7 +1260,7 @@ def _call_recognize_vlm(client: OpenAI, image_path: str, mime: str = "image/png"
     ]}]
     try:
         resp = client.chat.completions.create(
-            model=RECOGNIZE_VLM_MODEL, messages=messages,
+            model=VLM_MODEL, messages=messages,
             response_format={"type": "json_object"}, temperature=0, timeout=90,
             extra_body={"enable_thinking": False},
         )

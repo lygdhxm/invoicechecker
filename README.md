@@ -100,8 +100,7 @@ cp .env.example .env
 
 ```env
 ALIBABA_API_KEY=your_api_key_here
-VLM_MODEL=qwen-vl-max
-RECOGNIZE_VLM_MODEL=qwen3-vl-flash
+VLM_MODEL=qwen3-vl-flash
 ```
 
 > API Key 获取：https://bailian.console.aliyun.com/
@@ -116,12 +115,13 @@ python invoice_app.py
 
 ## 模型配置
 
-| 环境变量 | 用途 | 推荐值 |
-|---|---|---|
-| `VLM_MODEL` | 查验用（验证码识别 + 提取四要素兜底） | `qwen-vl-max` |
-| `RECOGNIZE_VLM_MODEL` | 识别整理用（完整字段提取） | `qwen3-vl-flash` |
+只有一个环境变量 `VLM_MODEL`，统一控制所有视觉识别（验证码、四要素提取、完整字段识别）。
 
-可选模型：`qwen-vl-max` / `qwen-vl-plus` / `qwen2-vl-72b-instruct` / `qwen3-vl-flash` 等（须为阿里云百炼平台支持的视觉语言模型）。
+| 环境变量 | 用途 | 默认值 |
+|---|---|---|
+| `VLM_MODEL` | 全部视觉识别任务 | `qwen3-vl-flash` |
+
+可选模型：`qwen3-vl-flash` / `qwen-vl-plus` / `qwen-vl-max` / `qwen2-vl-72b-instruct`（须为阿里云百炼平台支持的视觉语言模型）。
 
 **修改后需重启服务生效。**
 
