@@ -309,11 +309,21 @@ def pdf_parse_regex(text):
         code = m.group(1)
 
     date = ""
-    # 兼容 PDF 文字层中的部首替代字符 ⽉(U+2F49) ⽇(U+2F47)
-    m = re.search(r'(\d{4})年(\d{1,2})[\u6708\u2F49](\d{1,2})[\u65E5\u2F47]', text)
+    # 优先匹配"开票日期"前缀（铁路客票有乘车日期干扰，必须先锁定开票日期字段）
+    m = re.search(r'开票日期[：:]\s*(\d{4})年(\d{1,2})[\u6708\u2F49](\d{1,2})[\u65E5\u2F47]', text)
     if m:
         date = f"{m.group(1)}{m.group(2).zfill(2)}{m.group(3).zfill(2)}"
-    else:
+    if not date:
+        # 兼容铁路客票"开票日期:2026 04 28"空格分隔格式
+        m = re.search(r'开票日期[：:]\s*(\d{4})[\s/-](\d{1,2})[\s/-](\d{1,2})(?!\d)', text)
+        if m:
+            date = f"{m.group(1)}{m.group(2).zfill(2)}{m.group(3).zfill(2)}"
+    if not date:
+        # 兜底：通用年月日格式（兼容 PDF 文字层部首替代字符 ⽉U+2F49 ⽇U+2F47）
+        m = re.search(r'(\d{4})年(\d{1,2})[\u6708\u2F49](\d{1,2})[\u65E5\u2F47]', text)
+        if m:
+            date = f"{m.group(1)}{m.group(2).zfill(2)}{m.group(3).zfill(2)}"
+    if not date:
         m = re.search(r'(\d{4})[-/](\d{2})[-/](\d{2})', text)
         if m: date = f"{m.group(1)}{m.group(2)}{m.group(3)}"
 
